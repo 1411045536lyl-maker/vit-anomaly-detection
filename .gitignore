@@ -1,0 +1,14 @@
+# 忽略数据集和模型权重
+data/
+datasets/
+*.pth
+*.pt
+weights/
+runs/
+
+# 忽略环境配置和缓存
+.env
+__pycache__/
+*.pyc
+.vscode/
+.DS_Store
