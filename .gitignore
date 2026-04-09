@@ -1,6 +1,7 @@
 # 忽略数据集和模型权重
 data/
 datasets/
+outputs/
 *.pth
 *.pt
 weights/
