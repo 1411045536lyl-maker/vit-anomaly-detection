@@ -1,5 +1,6 @@
 import os
 import cv2
+import argparse
 import torch
 import numpy as np
 import torch.nn.functional as F
@@ -33,29 +34,31 @@ class PretrainedViTExtractor(torch.nn.Module):
         spatial_features = patch_tokens.transpose(1, 2).reshape(B, D, grid_size, grid_size)
         return spatial_features
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="执行 MVTec AD 的异常检测与热力图生成")
+    parser.add_argument('--category', type=str, default='metal_nut', help='测试的物品类别名称')
+    parser.add_argument('--data_root', type=str, default='./data/mvtec_ad', help='MVTec 数据集的根目录')
+    return parser.parse_args()
 
-def evaluate(category='metal_nut', data_root='./data/mvtec_ad'):
+def evaluate(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"🚀 正在使用设备: {device}")
 
-    memory_bank_path = f'./weights/{category}/memory_bank.pt'
+    memory_bank_path = f'./weights/{args.category}/memory_bank.pt'
     if not os.path.exists(memory_bank_path):
-        print("❌ 找不到记忆库，请先运行 train_memory_bank.py")
+        print(f"❌ 找不到 {args.category} 的记忆库，请先运行: python train_memory_bank.py --category {args.category}")
         return
     memory_bank = torch.load(memory_bank_path).to(device)
     print(f"🧠 成功加载记忆库，特征总数: {memory_bank.shape[0]}")
 
-    # ==========================================
-    # 使用预训练特征提取器进行测试
-    # ==========================================
     model = PretrainedViTExtractor().to(device)
     model.eval()
 
-    print(f"📂 正在加载 {category} 的测试数据...")
-    test_dataset = MVTecDataset(root_dir=data_root, category=category, is_train=False)
+    print(f"📂 正在加载 {args.category} 的测试数据...")
+    test_dataset = MVTecDataset(root_dir=args.data_root, category=args.category, is_train=False)
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
 
-    save_dir = f'./outputs/{category}/heatmaps'
+    save_dir = f'./outputs/{args.category}/heatmaps'
     os.makedirs(save_dir, exist_ok=True)
 
     all_image_scores = []  
@@ -69,29 +72,21 @@ def evaluate(category='metal_nut', data_root='./data/mvtec_ad'):
             label_name = label_names[0]
             true_label = label.item() 
 
-            # 特征提取
             features = model.extract_spatial_features(image)
             B, C, H, W = features.shape
-
             query_features = features.view(C, -1).transpose(0, 1)
 
-            # 距离度量 (计算测试图与记忆库特征的最短欧氏距离)
             distances = torch.cdist(query_features, memory_bank)
             min_distances, _ = torch.min(distances, dim=1)
             
-            # 取整张图片中最异常的 Patch 分数作为图像级异常分
             image_anomaly_score = min_distances.max().item()
             all_image_scores.append(image_anomaly_score)
             all_image_labels.append(true_label)
 
-            # 空间重构与上采样
             anomaly_map = min_distances.view(1, 1, H, W)
             anomaly_map = F.interpolate(anomaly_map, size=(224, 224), mode='bilinear', align_corners=False)
             anomaly_map = anomaly_map.squeeze().cpu().numpy()
 
-            # ----------------------------------------------------
-            # 热力图叠加逻辑
-            # ----------------------------------------------------
             anomaly_map_norm = anomaly_map - anomaly_map.min()
             if anomaly_map_norm.max() != 0:
                 anomaly_map_norm = anomaly_map_norm / anomaly_map_norm.max()
@@ -115,19 +110,16 @@ def evaluate(category='metal_nut', data_root='./data/mvtec_ad'):
             save_file = os.path.join(save_dir, f"{label_name}_{img_name}")
             cv2.imwrite(save_file, combined_img)
 
-            if idx % 20 == 0:
-                print(f"[{idx}/{len(test_loader)}] 已处理并保存: {save_file}")
-
     print("\n" + "="*50)
     print("📈 全局性能评估 (Global Evaluation)")
     print("="*50)
     try:
         image_auroc = roc_auc_score(all_image_labels, all_image_scores)
         print(f"✨ Image-level AUROC: {image_auroc * 100:.2f}%")
-        print("👉 面试话术：在引入基于大规模真实世界数据集预训练的 ViT 后，特征提取器的泛化边界极大提升，无监督检出率达到了工业落地水准！")
     except ValueError:
         print("⚠️ 计算 AUROC 失败。")
     print("="*50)
 
 if __name__ == '__main__':
-    evaluate(category='metal_nut', data_root='./data/mvtec_ad')
+    args = parse_args()
+    evaluate(args)
