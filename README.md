@@ -19,6 +19,7 @@
 |   `-- mvtec_ad                # MVTec AD 数据集存放目录
 |-- weights                     # 自动生成的正常样本特征记忆库
 `-- outputs                     # 测试阶段生成的缺陷对比热力图
+```
 
 ## 2. 已实现功能
 
@@ -42,6 +43,7 @@ scikit-learn
 tqdm
 Pillow
 numpy
+```
 
 ## 4. 快速开始
 
