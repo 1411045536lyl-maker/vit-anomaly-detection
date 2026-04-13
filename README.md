@@ -45,7 +45,7 @@ Pillow
 numpy
 ```
 
-# 4. 数据集说明
+## 4. 数据集说明
 
 本项目默认使用业界权威的无监督异常检测基准数据集 **MVTec AD** (MVTec Anomaly Detection)。  
 该数据集包含 15 种不同的工业产品类别（5 种纹理，10 种物体），总计超过 5000 张高分辨率图像。
@@ -86,7 +86,7 @@ python evaluate.py --category bottle
 
 ## 6. 输出结果
 
-在 MVTec AD (Metal Nut) 测试集中，本系统实现了 **99.95% 的 Image-level AUROC**。
+在 MVTec AD (Metal Nut) 测试集中，本系统实现了 **99% 的 Image-level AUROC**。
 
 训练与评估完成后，项目中将自动生成以下文件结构：
 
