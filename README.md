@@ -45,13 +45,22 @@ Pillow
 numpy
 ```
 
-## 4. 快速开始
+# 4. 数据集说明
 
-### 4.1 数据准备
+本项目默认使用业界权威的无监督异常检测基准数据集 **MVTec AD** (MVTec Anomaly Detection)。  
+该数据集包含 15 种不同的工业产品类别（5 种纹理，10 种物体），总计超过 5000 张高分辨率图像。
+
+- **任务设定**: 训练集仅包含纯“正常”（Good）的工业品样本；测试集则包含正常样本以及带有各类真实缺陷（如划痕、裂纹、污染、形变等）的异常样本。
+
+- **官方下载地址**: [MVTec AD Dataset Official Website](https://www.mvtectest.com/downloads)  
+
+## 5. 快速开始
+
+### 5.1 数据准备
 
 请下载完整的 MVTec AD 数据集，并将其解压至项目根目录下的 `data/mvtec_ad/` 中，确保包含具体类别（如 `metal_nut`, `bottle` 等）及其内部的 `train/good` 与 `test` 等标准子目录。
 
-### 4.2 构建特征记忆库
+### 5.2 构建特征记忆库
 
 执行以下命令，提取训练集中所有正常样本的特征并持久化。初次运行将自动下载预训练权重。
 
@@ -63,7 +72,7 @@ python train_memory_bank.py
 python train_memory_bank.py --category bottle
 ```
 
-### 4.3 异常检测与性能评估
+### 5.3 异常检测与性能评估
 
 执行以下命令，模型将对测试集样本进行评分计算，在终端输出评估指标，并保存可视化热力图。
 
@@ -75,7 +84,7 @@ python evaluate.py
 python evaluate.py --category bottle
 ```
 
-## 5. 输出结果
+## 6. 输出结果
 
 在 MVTec AD (Metal Nut) 测试集中，本系统实现了 **99.95% 的 Image-level AUROC**。
 
